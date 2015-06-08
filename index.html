@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+
+    <title>Soyez spécifiques</title>
+
+    <meta name="author" content="Kévin Gomez" />
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui" />
+
+    <link rel="stylesheet" href="reveal.js/css/reveal.css" />
+    <link rel="stylesheet" href="reveal.js/css/theme/sky.css" id="theme" />
+    <link rel="stylesheet" href="css/custom.css" />
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="reveal.js/lib/css/zenburn.css" />
+
+    <!-- Printing and PDF exports -->
+    <script>
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+</head>
+<body>
+<div class="reveal">
+
+    <!-- Any section element inside of this container is displayed as a slide -->
+    <div class="slides">
+        <section>
+            <h1>Soyez spécifiques</h1>
+            <p>
+                <small><a href="http://www.kevingomez.fr">Kévin Gomez</a> / <a href="http://twitter.com/KPhoen">@KPhoen</a></small>
+            </p>
+        </section>
+
+        <section>
+            <section>
+                <h3>Le problème</h3>
+                <p>
+                    Gérer <strong>l'accès aux données</strong> dans une application
+                </p>
+
+                <aside class="notes">
+                    Objectif : retour d’expérience / partage de réflexion autour de l’accès aux données dans une application.
+                </aside>
+            </section>
+
+            <section>
+                <h3>Les contraintes</h3>
+                <p>
+                    <strong>Isolation</strong> nette entre la “couche données” et le “reste du monde”
+                </p>
+            </section>
+
+            <section>
+                <h3>Pourquoi ?</h3>
+                <p>
+                    SGBD <em>X</em> en dév/prod, <em>In memory</em> en test<br />
+                    Pas de Doctrine qui fuite<br />
+                </p>
+
+                <aside class="notes">
+                    Je veux une isolation nette, je veux pouvoir tester
+                    unitairement le bousin, je veux pouvoir intercaler du cache, je
+                    veux des interfaces claires, je veux pas du doctrine qui traine
+                    dans les contrôleurs, ...
+                </aside>
+            </section>
+
+            <section>
+                <h3>La solution ?</h3>
+                <p>
+                    Facile : on fait des <em>repositories</em> !
+                </p>
+            </section>
+
+            <section>
+                <h3>À la Doctrine</h3>
+                <pre><code data-trim>
+class DbCompanyRepository implements CompanyRepository
+{
+    public function findBySlug($slug) { }
+    public function findPublic() { }
+
+    # …
+}
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>Problèmes ?</h3>
+                <ul>
+                    <li>
+                        persistance/suppression d’entités ?
+                        <ul>
+                            <li>facile : on encapsule ces actions dans le repository.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        1 requête ≊ 1 méthode
+                        <ul>
+                            <li>Hum.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+
+            <section>
+                <h3>État des lieux</h3>
+                <pre><code data-trim>
+class DbCompanyRepository implements CompanyRepository
+{
+    public function add(Company $company) { }
+    public function remove(Company $company) { }
+
+    public function findBySlug($slug) { }
+    public function findPublic() { }
+    public function findPrivate() { }
+    public function findDeleted() { }
+    public function findByNameLike($search) { }
+    public function findByNameOrDescriptionLike($search) { }
+    public function findPublicByNameOrDescriptionLike($search) { }
+
+    # …
+}
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>Ce que nous dit la Bible</h3>
+                <blockquote cite="http://martinfowler.com/eaaCatalog/repository.html">
+                    “A <strong>Repository mediates</strong> between the domain and data mapping layers, acting like an in-memory domain object collection.
+                    <strong>Client objects construct query specifications</strong> declaratively and submit them to Repository for satisfaction.”
+                </blockquote>
+                <small>Martin Fowler &mdash; <a href="http://martinfowler.com/eaaCatalog/repository.html">http://martinfowler.com/eaaCatalog/repository.html</a></small>
+
+                <aside class="notes">
+                    Bon, là on s’arrête, on réfléchit et on revient aux sources : le pattern repository.
+                    On relit et on s’aperçoit qu’on a zappé une couche : les “query specifications”
+                </aside>
+            </section>
+
+            <section>
+                <h3>Ce que nous dit la Bible</h3>
+                <p>
+                    <img src="./images/repositorySketch.gif" />
+                </p>
+            </section>
+        </section>
+
+        <section>
+            <section>
+                <h2>Le pattern “Specification”</h2>
+            </section>
+
+            <section>
+                <h3>Retour à la Bible</h3>
+                <blockquote cite="http://martinfowler.com/apsupp/spec.pdf">
+                    “The central idea of Specification is to <strong>separate the statement</strong>
+                    of how to match a candidate, <strong>from the candidate object</strong> that it is matched against.”
+                </blockquote>
+                <small>Martin Fowler &mdash; <a href="http://martinfowler.com/apsupp/spec.pdf">http://martinfowler.com/apsupp/spec.pdf</a></small>
+            </section>
+
+            <section>
+                <h3>Spécifions</h3>
+                <ul>
+                    <li>une spécification = une règle métier</li>
+                    <li>
+                        les spécifications sont composables
+                        <ul>
+                            <li><em>AND, OR, NOT</em></li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+
+            <section>
+                <h3>Spécifions</h3>
+                <ul>
+                    <li>
+                        En tant que <em>X</em>, je veux lister les entreprises :
+                        <ul>
+                            <li>publiques ET vers Lyon</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <pre><code data-trim>
+$specification = new Specification('publique ET vers Lyon');
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>Repositories</h3>
+                <pre><code data-trim>
+class DbCompanyRepository implements CompanyRepository
+{
+    public function add(Company $company) { }
+    public function remove(Company $company) { }
+
+    public function matching(Specification $spec) {}
+}
+                </code></pre>
+            </section>
+        </section>
+
+        <section>
+
+            <section>
+                <h2>RulerZ !</h2>
+            </section>
+
+            <section>
+                <h3>Une spécification</h3>
+                <pre><code data-trim>
+class CompanyPublic implements Specification
+{
+    public function getRule()
+    {
+        return 'public = 1';
+    }
+
+    public function getParameters()
+    {
+        return [];
+    }
+}
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>Dans l'application</h3>
+                <pre><code data-trim>
+$specs = new RulerZ\Spec\AndX([
+    new Domain\Spec\CompanyPublic(),
+    new Domain\Spec\CompanyNear('Lyon'),
+]);
+
+$companies = $repository->matching($specs);
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>Le <em>repository</em></h3>
+                <pre><code data-trim>
+public function matching(Specification $spec)
+{
+    $qb = $this->createQueryBuilder('c');
+
+    return $this->rulerz->satisfiesSpec($qb, $spec);
+}
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>État des lieux</h3>
+                <ul>
+                    <li>isolation des données via les repositories : ✓</li>
+                    <li>
+                        séparation du métier et des opérations de sélection : ✓
+                        <ul>
+                            <li>Doctrine/Pomm/Elasticsearch/in-memory/…</li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+        </section>
+
+        <section>
+            <img src="./images/end.gif" />
+        </section>
+
+        <section>
+            <h3>Pour aller plus loin</h3>
+            <ul>
+                <li><a href="http://www.whitewashing.de/2013/03/04/doctrine_repositories.html">On Taming Repository Classes in Doctrine</a></li>
+                <li><a href="http://blog.kevingomez.fr/2015/02/07/on-taming-repository-classes-in-doctrine-among-other-things/">On Taming Repository Classes in Doctrine… Among other things</a></li>
+                <li><a href="http://blog.kevingomez.fr/2015/03/14/rulerz-specifications-and-symfony-are-in-a-boat/">RulerZ, specifications and Symfony are in a boat</a></li>
+                <li><a href="https://github.com/K-Phoen/rulerz">RulerZ</a></li>
+                <li><a href="https://github.com/K-Phoen/RulerZBundle">RulerZBundle</a></li>
+            </ul>
+        </section>
+    </div>
+</div>
+
+<script src="reveal.js/lib/js/head.min.js"></script>
+<script src="reveal.js/js/reveal.js"></script>
+
+<script>
+// Full list of configuration options available at:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+    controls: true,
+    progress: true,
+    history: true,
+    center: true,
+
+    transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+    // Optional reveal.js plugins
+    dependencies: [
+        { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+        { src: 'reveal.js/plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+        { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true },
+        { src: 'reveal.js/plugin/notes/notes.js', async: true }
+    ]
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+.reveal h1 {
+    font-size: 3em;
+}
+
+.reveal blockquote {
+    width: 80%;
+}
+
+.reveal section img {
+    border: none;
+}
