@@ -279,6 +279,72 @@ public function matching(Specification $spec)
         </section>
 
         <section>
+            <section>
+                <h2>Dans la vraie vie</h2>
+            </section>
+
+            <section>
+                <h3>Un repository</h3>
+                <pre><code data-trim>
+class DbCompanyRepository implements CompanyRepository
+{
+    public function add(Company $company) { }
+    public function remove(Company $company) { }
+
+    public function matching(Specification $spec) {}
+
+    public function findBySlug($slug) { }
+}
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>RulerZ + Form Component</h3>
+
+                <pre><code data-trim>
+class CompanySearchType extends AbstractType
+{
+  public function buildForm($builder, $options)
+  {
+    $who = $builder
+      ->create('who')
+      ->addModelTransformer(
+          new SpecToStringTransformer(Spec\CompanyName::class, 'terms')
+      );
+
+    $builder->add($who);
+  }
+
+  // ...
+}
+                </code></pre>
+            </section>
+
+            <section>
+                <h3>RulerZ + Form Component</h3>
+
+                <pre><code data-trim>
+public function searchAction(Request $request)
+{
+    $results = [];
+    $form    = $this->formFactory->create('company_search');
+    $form->handleRequest($request);
+
+    if ($form->isValid()) {
+        $spec = new Spec\AndX(array_merge(   // aggregate
+            array_filter($form->getData()),  // remove empty specs
+            [new AppSpec\CompanyPublished()] // only display published companies
+        ));
+        $results = $this->companyRepository->matchingSpec($spec);
+    }
+
+    return $this->render('...');
+}
+                </code></pre>
+            </section>
+        </section>
+
+        <section>
             <img src="./images/end.gif" />
         </section>
 
